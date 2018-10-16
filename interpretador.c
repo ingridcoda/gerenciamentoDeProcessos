@@ -2,22 +2,39 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <ctype.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 int main(int argc, char * argv[]){
-	int status, prioridade;
+	int status, *prioridade;
+	int segmento1 = shmget(10,  2 * sizeof(char *), IPC_CREAT | S_IRUSR | S_IWUSR);
+	int segmento2 = shmget(20,  100 * sizeof(char), IPC_CREAT | S_IRUSR | S_IWUSR);
+	int segmento3 = shmget(30,  100 * sizeof(char), IPC_CREAT | S_IRUSR | S_IWUSR);
+	int segmento4 = shmget(40,  sizeof(char), IPC_CREAT | S_IRUSR | S_IWUSR);
+	int segmento5 = shmget(50,  sizeof(int), IPC_CREAT | S_IRUSR | S_IWUSR);
 	pid_t pid;
-	char * programa;
+	char **vet;
+	char * programa = (char *) shmat(segmento2, 0, 0);
 	FILE *arq = fopen("exec.txt", "r");
-
-	while(fscanf(arq, "exec %s prioridade=%d", programa, &prioridade) != EOF){
+	vet = (char **) shmat(segmento1, 0, 0);
+	vet[0] = (char *) shmat(segmento3, 0, 0);
+	vet[1] = (char *) shmat(segmento4, 0, 0);
+	prioridade = shmat(segmento5, 0, 0);
+	
+	while(fscanf(arq, "exec %s prioridade=%d\n", programa, prioridade) != EOF){
+		//printf ("bhbhb");	
 		sleep(1);
 		pid = fork();
-		argv[0] = programa;
-		itoa(prioridade, argv[1], 10);
+		vet[0] = programa;
+		sprintf(vet[1], "%d", prioridade);
 		argc = 2;
+		
+		printf ("%s", vet[1]);
+		
 		if(pid == 0) {
-			execv("./escalonador", argv);
+			execv("./escalonador.c", vet);
 			perror("execv\n");
 			exit(EXIT_FAILURE);
 		} else if(pid < 0) {
@@ -31,5 +48,6 @@ int main(int argc, char * argv[]){
 				printf("Escalonador não executado!\n");
 		}
 	}
+	fclose(arq);
 	return 0;
 }

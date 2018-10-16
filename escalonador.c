@@ -1,18 +1,55 @@
 #include <stdio.h>
-#include <stdib.h>
+#include <stdlib.h>
+
+typedef struct programa {
+	char *nomeprograma;
+	int prioridade;
+} Programa;
+
+typedef struct fila {
+	Programa programa;
+	Programa *prox;
+} Fila;
+
+
+
+Fila *testaPrioridade (Programa atual, Programa novo, Fila fila){
+	Fila p = fila;
+	if (atual.prioridade > novo.prioridade){
+
+		//SIGSTOP atual;
+		signal(SIGSTOP);
+		while (p.prox != NULL){
+			p= p->prox;
+		}
+		p->prox = novo;
+		p->prox->prox = NULL;
+		
+		//sort fila
+		
+		//SIGCONT 1o da fila
+		if (fila.programa.nomeprograma == novo.nomeprograma)
+			signal(SIGSTART);
+		else 
+			signal (SIGCONT);
+	}
+	return fila;
+}
+
 
 int main(int argc, char * argv[]){
 	char * programa = (char *) malloc (255 * sizeof(char));
 	int prioridade;
-	char * arg[];
+	char * arg[2];
 	FILE * arq = fopen("saida.txt", "w");
 	
 	programa = argv[0];
-	atoi(argv[1], prioridade);
+	prioridade = atoi(argv[1]);
 	
 	while(1){
 		switch(prioridade){
-			case 1 || case 2: //Processos REAL TIME
+			case 1 || 2: //Processos REAL TIME
+																																										
 				break;
 			case 6: //Processos ROUND-ROBIN CPU-BOUND
 				break;
@@ -22,4 +59,7 @@ int main(int argc, char * argv[]){
 				break;
 		}
 	}
+	
+	fclose(arq);
+	return 0;
 }

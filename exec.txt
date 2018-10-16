@@ -1,0 +1,2 @@
+exec nomeprograma prioridade=1
+exec outroprograma prioridade=4
