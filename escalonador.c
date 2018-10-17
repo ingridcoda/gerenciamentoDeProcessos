@@ -6,6 +6,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+int novoProcesso = 0;
 
 typedef struct programa {
 	char * nome;
@@ -17,6 +18,16 @@ typedef struct fila {
 	Programa * programa;
 	struct fila * prox;
 } Fila;
+
+void signal_handler(int sig) {
+    switch (sig) {
+		case SIGUSR1: //NOVO PROCESSO CHEGOU VIA INTERPRETADOR	
+			novoProcesso = 1;
+			break;
+		default:
+			break;
+    }
+}
 
 void insereFila (Fila * fila, Programa * p){
 	Fila * f = (Fila *) malloc (sizeof(Fila));
@@ -42,7 +53,7 @@ int filaVazia (Fila * f){
 	return 0; //fila ocupada		
 }
 
-void executa(Fila *f, int prioridade, pid_t pid, pid_t pidExecutando){
+void escalona(Fila *f, int prioridade, pid_t pid, pid_t pidExecutando){
 	f->programa->pid = pid;
 	
 	//tratador de politicas de escalonamento
@@ -53,13 +64,13 @@ void executa(Fila *f, int prioridade, pid_t pid, pid_t pidExecutando){
 		case 2: //Processos REAL TIME	
 			break;
 
-		case 3:
+		case 3: //Processos PRIORIDADE SIMPLES
 			break;
 
-		case 4:
+		case 4: //Processos PRIORIDADE SIMPLES
 			break;
 
-		case 5:
+		case 5: //Processos PRIORIDADE SIMPLES
 			break;
 
 		case 6: //Processos ROUND-ROBIN CPU-BOUND
@@ -76,21 +87,15 @@ void executa(Fila *f, int prioridade, pid_t pid, pid_t pidExecutando){
 	pidExecutando = pid;
 }
 
-
-
 int testaPrioridade(Fila * filas[], int prioridade){
 	int i;	
 
-	//alguma fila mais prioritaria nao esta vazia, logo nao eh pra executar agora o novo processo
+	/* alguma fila mais prioritaria nao esta vazia, 
+	logo nao eh pra executar agora o novo processo */
 	for(i = 0; i < prioridade-1; i++)
 		if(!filaVazia(filas[i])) return 0; 		
 
-	/*todas as filas mais prioritarias estao vazias, porem processo novo nao eh o primeiro da sua fila, 
-	  logo nao eh pra executar agora o novo processo*/
-	if(!filaVazia(filas[prioridade-1])) return 0;	
-
-	/*todas as filas mais prioritarias estao vazias e processo novo eh o primeiro da sua fila, 
-	  logo eh pra executar agora o novo processo*/
+	/*todas as filas mais prioritarias estao vazias */
 	return 1;
 }
 
@@ -115,40 +120,59 @@ int main(int argc, char * argv[]){
 		*segmento[i] = shmget(100*(i+2), sizeof (Fila *), IPC_CREAT | S_IRUSR | S_IWUSR);
 		filas[i] = (Fila *) shmat(*segmento[i], 0, 0);
 	}		
-
-	*segmento[9] = shmget(1100, 255 * sizeof (char), IPC_CREAT | S_IRUSR | S_IWUSR);
+	
+	//valor instanciado pelo interpretador
+	*segmento[9] = shmget(10, 255 * sizeof (char), IPC_CREAT | S_IRUSR | S_IWUSR);
 	p->nome = (char *) shmat(*segmento[9], 0, 0);
-
-	*segmento[10] = shmget(1200, sizeof (int), IPC_CREAT | S_IRUSR | S_IWUSR);
+	
+	//valor instanciado pelo interpretador
+	*segmento[10] = shmget(20, sizeof (int), IPC_CREAT | S_IRUSR | S_IWUSR);
 	p->prioridade = (int *) shmat(*segmento[10], 0, 0);
+	
+	//configurando SIGUSR1 para usar handler que trata processo novo recebido
+	signal(SIGUSR1, signal_handler);
 
 	while(1){
-		p->nome = argv[0];
-		*p->prioridade = atoi(argv[1]);
-		if(*p->prioridade > 0 && *p->prioridade < 8){
-			pid = fork();
-			if (pid < 0) {
-				perror("fork\n");
-				exit(EXIT_FAILURE);
-			} else if (pid == 0) { //é filho
+		//recebeu sinal de novo processo
+		if(novoProcesso){
+			novoProcesso = 0;
+			//se prioridade eh valida
+			if(*p->prioridade > 0 && *p->prioridade < 8){
+				//insere na fila adequada
+				insereFila(filas[*p->prioridade-1], p);	
 				//verifica se eh prioritario
 				if(testaPrioridade(filas, *p->prioridade)){
-					insereFila(filas[*p->prioridade], p);
-					executa(filas[*p->prioridade], *p->prioridade, pid, executando);
-				} else insereFila(filas[*p->prioridade], p);
-			} else {
-				wait(&status);
-				if(WIFEXITED(status)) {
-					printf("Escalonador executado com sucesso!\n");
-					exit(0);
-				} else {
-					printf("Escalonador não executado!\n");
-					exit(1);
-				}
+					if(filas[*p->prioridade-1]->programa == p){
+						pid = fork();
+						//erro fork
+						if(pid < 0){
+							exit(1);
+						}
+						//filho
+						else if(pid == 0){
+							execv(*p->nome, NULL);
+						}
+						//pai
+						else {
+							//escalona(?) ou apenas espera filho
+						}
+					}			
+					
+				} 
+				//nao eh prioritario
+				else {
+					//nao faz nada(?)
+				}					
+			} 
+			//prioridade invalida
+			else {
+				printf("prioridade não encontrada\n");
+				exit(1);
 			}
-		} else {
-			printf("prioridade não encontrada\n");
-			exit(1);
+		} 
+		//nao tem novo processo
+		else {
+			//escalona(?) ou nao faz nada (?)
 		}
 	}
 	
