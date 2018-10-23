@@ -1,0 +1,56 @@
+Valor prioridade vez 1: 1
+Valor nome programa vez 1: p1
+entrei prioridade ok
+Antes insere
+entrei insere
+inserido
+Depois insere
+Fila 0 vazia? nao
+if fila 0
+Fila 0 vazia? nao
+executando p1
+1 2 3 4 5 6 7 8 9 10 
+Programa p2 terminou - cod 0
+Fila 0 vazia? sim
+Fila 1 vazia? sim
+Fila 2 vazia? sim
+Fila 3 vazia? sim
+Fila 4 vazia? sim
+Fila 5 vazia? sim
+Fila 6 vazia? sim
+Valor prioridade vez 2: 2
+Valor nome programa vez 2: p2
+entrei prioridade ok
+Antes insere
+entrei insere
+inserido
+Depois insere
+Fila 0 vazia? sim
+Fila 1 vazia? nao
+if fila 1
+Fila 1 vazia? nao
+executando p2
+11 12 13 14 15 16 17 18 19 20 
+Programa p2 terminou - cod 0
+Fila 1 vazia? sim
+Fila 2 vazia? sim
+Fila 3 vazia? sim
+Fila 4 vazia? sim
+Fila 5 vazia? sim
+Fila 6 vazia? sim
+Valor prioridade vez 3: 6
+Valor nome programa vez 3: p2
+entrei prioridade ok
+Antes insere
+entrei insere
+inserido
+Depois insere
+Fila 0 vazia? sim
+Fila 1 vazia? sim
+Fila 2 vazia? sim
+Fila 3 vazia? sim
+Fila 4 vazia? sim
+Fila 5 vazia? nao
+if fila 5
+Fila 5 vazia? nao
+RR 5

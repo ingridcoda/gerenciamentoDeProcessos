@@ -1,11 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
+#include "semaforos.h"
+
 
 int main(int argc, char * argv[]){
 	int status;
@@ -15,6 +9,9 @@ int main(int argc, char * argv[]){
 	char * programa = (char *) shmat(segmento1, 0, 0);	
 	int * prioridade = shmat(segmento2, 0, 0);				
 	FILE * arq = fopen("exec.txt", "r");
+	int semId = semget (12345, 1, 0666 | IPC_CREAT);
+	setSemValue(semId);
+	printf ("Interpretador %d inicializado!\n", getpid());
 
 	pid = fork();
 	
@@ -25,25 +22,28 @@ int main(int argc, char * argv[]){
 	}
 	/* se eh filho faz execv do escalonador */
 	if(pid == 0){
-		execv("./escalonador", NULL);
+		execv("escalonador", NULL);
 	} 
 	/* se eh pai envia sinal pro escalonador */
-	else {
+	else {		
 		while(fscanf(arq, "exec %s prioridade=%d\n", programa, prioridade) != EOF){
-			sleep(1);
-			
-			/* envia sinal dizendo que recebeu novo processo */
-			kill(pid, SIGUSR1);			
+			semaforoP(semId);
+			printf("Programa %s prioridade %d pid %d identificado pelo interpretador.\n", programa, *prioridade, pid);
+			semaforoV(semId);
+			sleep(1);	
 		}
-		
+
+		printf("Terminou de adicionar os programas no escalonador.\n");
+
+		sleep(1);			
+
+		semaforoP(semId);
+		*prioridade = -1;
+		semaforoV(semId);
+				
 		/* espera filho */
 		wait(&status);	
-		
-		/* verifica resultado da execucao do filho */
-		if(WIFEXITED(status))
-			printf("Interpretador executado com sucesso!\n");
-		else
-			printf("Interpretador não executado!\n");
+		printf("Interpretador finalizado!\n");
 	}
 	
 	fclose(arq);
